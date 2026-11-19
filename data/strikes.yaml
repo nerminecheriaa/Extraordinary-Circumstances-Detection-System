@@ -1,0 +1,72 @@
+# Calendrier des grèves du contrôle aérien (ATC), sourcé à la main.
+#
+# Règles de saisie (voir docs/hypotheses.md, H8, et docs/decisions.md, D12) :
+# - chaque grève non annulée cite au moins une source vérifiable ;
+# - status : confirmed (grève effective), announced (préavis seulement),
+#   cancelled (préavis levé : gardé pour la traçabilité, ignoré par le moteur) ;
+# - zone : préfixe OACI de la zone touchée ("LF" = France métropolitaine) ;
+# - confirmed_airports : seulement les aéroports cités comme touchés par une source.
+#   Un aéroport de la zone qui n'est pas listé donne INCERTAIN, jamais AUCUNE ;
+# - coverage : zones et périodes où l'on a cherché les grèves. Hors couverture,
+#   l'absence de grève dans ce fichier ne prouve rien → INCERTAIN.
+# - les heures ont toujours un fuseau horaire.
+#
+# Toute modification du fichier doit changer la version.
+
+version: "2026-11-a"
+
+coverage:
+  - zone: LF
+    from: "2025-07-01T00:00:00+02:00"
+    to: "2025-08-01T00:00:00+02:00"
+    checked_by: >
+      Vérification manuelle (dossier paris_calme_2025-07-10) : préavis de
+      grève ATC de juillet 2025 limités aux 3 et 4 juillet.
+    note: À étendre avant toute utilisation sur d'autres périodes.
+
+strikes:
+  # Hors couverture déclarée : ces grèves sont connues et sourcées, mais on n'a
+  # PAS vérifié toute la période. Elles peuvent donner EC_PROBABLE, jamais AUCUNE.
+  - id: FR-ATC-2023-03-15
+    status: confirmed
+    zone: LF
+    confirmed_airports: [LFPO]         # seul aéroport cité par la source
+    start: "2023-03-15T00:00:00+01:00"
+    end: "2023-03-16T00:00:00+01:00"
+    timing: day
+    unions: []                         # non nommés par la source
+    sources:
+      - https://www.tourmag.com/Greve-15-mars-des-perturbations-attendues-a-l-aeroport-de-Paris-Orly_a117833.html
+    note: >
+      Grève des contrôleurs aériens contre la réforme des retraites.
+      La DGAC demande d'annuler 20 % des vols à Orly.
+
+  - id: FR-ATC-2023-12-18
+    status: confirmed
+    zone: LF
+    confirmed_airports: [LFPO, LFRB]   # Orly et Brest cités par la source
+    start: "2023-12-18T00:00:00+01:00"
+    end: "2023-12-19T00:00:00+01:00"
+    timing: day
+    unions: [USAC-CGT]                 # cité via un lien de la source ; plusieurs syndicats locaux
+    sources:
+      - https://www.tourmag.com/Greve-controleurs-aeriens-perturbation-a-Orly-et-Brest_a121008.html
+    note: >
+      Préavis visant le CRNA-Nord et les approches d'Orly, Lyon, Lille, Brest,
+      Rouen, Poitiers et Saint-Yan. La DGAC demande -30 % à Orly, -50 % à Brest.
+      Les autres aéroports de ces approches ne sont pas cités comme touchés.
+
+  - id: FR-ATC-2025-07-03
+    status: confirmed
+    zone: LF
+    confirmed_airports: [LFPG, LFPO]   # Roissy-CDG et Orly cités par la source
+    start: "2025-07-03T00:00:00+02:00"
+    end: "2025-07-05T00:00:00+02:00"
+    timing: day        # journées entières : horaires précis du préavis non sourcés
+    unions: [UNSA-ICNA, USAC-CGT]
+    sources:
+      - https://www.air-journal.fr/2025-07-13-la-derniere-greve-des-controleurs-aeriens-francais-a-coute-120-millions-deuros-selon-eurocontrol-5264054.html
+    note: >
+      Grève des contrôleurs aériens français les 3 et 4 juillet 2025.
+      Selon Eurocontrol (via la source) : 1 422 vols annulés par jour de grève ;
+      1 200 vols annulés à Orly et Roissy-CDG.
