@@ -8,7 +8,7 @@ Prototype réalisé pour l'exercice technique proposé par Upclaim.
 
 | Ce qui est demandé | Où le trouver |
 |---|---|
-| Choix techniques justifiés, code clair | [`docs/decisions.md`](docs/decisions.md) (D1 à D13), code dans `src/ec_detector/`, tests dans `tests/` |
+| Choix techniques justifiés, code clair | [`docs/decisions.md`](docs/decisions.md) (D1 à D14), code dans `src/ec_detector/`, tests dans `tests/` |
 | Prise de décision, choix et hypothèses | [`docs/hypotheses.md`](docs/hypotheses.md) (H1 à H12) et les sections 3 à 6 ci-dessous |
 | Intégration au produit | [`docs/integration.md`](docs/integration.md) |
 | Démonstration | `uvicorn ec_detector.api:app` (section 8) et `python scripts/evaluate.py` (section 7) |
@@ -139,8 +139,11 @@ Puis ouvrir http://127.0.0.1:8000 :
 - **Dossiers** : la file des dossiers de `cases/`, filtrée par action (continuer, mise en attente, relecture juriste). Pour chaque dossier : action, statut, minutes imputables, chronologie aux deux aéroports (période de retard, épisode météo, grève), raisons, preuves (METAR bruts, grèves sourcées) et le JSON stocké sur le dossier.
 - **Nouveau dossier** : analyse d'un vol saisi à la main (heures en UTC).
 - **Évaluation** : les mêmes indicateurs que `scripts/evaluate.py`.
+- **Note pour le juriste** (dans le détail d'un dossier) : un LLM rédige une note à partir des seules raisons `R…` et preuves `E…`. Chaque paragraphe cite ses références, cliquables. Le code vérifie références et nombres, sinon modèle fixe (D14).
 
-L'interface ne fait qu'afficher le JSON de l'API : toutes les décisions sont prises en Python. Endpoints : `POST /api/decide`, `POST /api/decide/batch`, `GET /api/cases`, `GET /api/evaluation`, `GET /api/meta` ; documentation interactive sur `/docs`.
+L'interface ne fait qu'afficher le JSON de l'API : toutes les décisions sont prises en Python. Endpoints : `POST /api/decide`, `POST /api/decide/batch`, `GET /api/cases`, `GET /api/evaluation`, `GET /api/meta`, `POST /api/note` ; documentation interactive sur `/docs`.
+
+**Activer le LLM (optionnel)** : copier `.env.example` en `.env` (ignoré par git) et y mettre une clé Mistral (offre gratuite sur console.mistral.ai). Sans clé, tout fonctionne et la note vient du modèle fixe. L'offre gratuite étant limitée à 2 requêtes par minute, lancer `python scripts/prepare_notes.py` avant une présentation pour pré-générer les notes (environ 7 min).
 
 Le cache METAR (`data/cache/`) n'est pas versionné : sur un clone neuf, le premier affichage télécharge les relevés (environ 30 s). Lancer `python scripts/evaluate.py` une fois avant une présentation pour remplir le cache.
 
@@ -163,9 +166,11 @@ ec-detector/
     engine.py         décision : règles → statut, confiance, preuves
     cli.py            ligne de commande
     evaluation.py     indicateurs d'évaluation (fonctions pures)
+    note.py           note pour le juriste : LLM + contrôles, repli sur modèle fixe
     api.py            petite API FastAPI (+ interface static/)
   cases/              dossiers de test sur des journées réelles vérifiées
   scripts/evaluate.py
+  scripts/prepare_notes.py   pré-génère les notes pour le juriste (quota LLM gratuit)
   tests/
 ```
 

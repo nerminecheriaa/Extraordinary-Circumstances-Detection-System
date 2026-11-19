@@ -10,7 +10,7 @@ Chaque décision : **choix** → **pourquoi** → **alternative écartée**.
 - **Écarté** : un classifieur supervisé. À reconsidérer avec un historique de dossiers et leur issue, pour **calibrer** les seuils, pas pour remplacer les règles.
 
 ## D2 — Le LLM est hors de la décision
-- **Choix** : l'explication est un texte construit à partir des preuves. Un LLM pourrait la reformuler, uniquement à partir du JSON.
+- **Choix** : l'explication est un texte construit à partir des preuves. Un LLM la reformule en note pour le juriste, uniquement à partir du JSON, avec des contrôles (D14).
 - **Pourquoi** : « le code décide, l'IA met en forme ». Une décision non reproductible n'est pas défendable.
 - **Écarté** : demander à un LLM « y a-t-il une circonstance extraordinaire ? ».
 
@@ -86,3 +86,25 @@ Le seul chemin automatique (`CONTINUER`) est aussi le plus exigeant.
 - **Pourquoi** : ce sont les deux indicateurs du produit. Un renvoi coûte du temps de juriste, une erreur automatique coûte un procès ou un dossier.
 - **Protocole** : étiquette, horaires (convention fixe : départ 10:00Z, 210 min de retard) et sources écrits **avant** de lancer le moteur. Un écart est un résultat, pas une raison de modifier le dossier ou un seuil.
 - **Limite** : 13 dossiers, dont des pièges choisis à la main. Démonstration, pas une mesure statistique.
+
+## D14 — Note pour le juriste : un LLM rédige, le code vérifie
+- **Choix** : `src/ec_detector/note.py`. Après la décision, un LLM (Mistral, `ministral-8b-latest` par défaut) rédige une note de 3 paragraphes pour le juriste. Endpoint `POST /api/note`, bouton « Rédiger la note (IA) » dans l'interface.
+- **Ce que reçoit le LLM** : uniquement des **faits** extraits du JSON de décision, chacun avec un identifiant : `D1` (décision), `V1` (vol), `R1`, `R2`… (raisons du moteur) et `E1`, `E2`… (preuves, 20 au plus, réparties entre les aéroports). Le code ajoute le **sens** de la décision en clair (« la compagnie pourrait refuser l'indemnité… ») et le nom des aéroports. Ni donnée passager, ni décision envoyée par le navigateur : le serveur recalcule la décision avant d'écrire la note.
+- **Ce que vérifie le code**, avant d'afficher la note :
+  | Contrôle | Pourquoi |
+  |---|---|
+  | Réponse en JSON au format attendu | pas de texte libre non structuré |
+  | Chaque paragraphe cite au moins une référence | pas d'affirmation sans preuve |
+  | Chaque référence existe (`D1`, `V1`, `R…`, `E…` envoyés) | pas de preuve inventée |
+  | Chaque nombre du texte figure dans les faits | pas de durée, date ou vitesse inventée ou mal convertie |
+  | Pas de formulation qui inverse la décision (« indemnisation probable » sur une CE probable…), négations comprises | le pire défaut : une note qui dit le contraire du moteur |
+  | Pas de code OACI ni de ville absents des faits | pas de « LFPG (Paris-Orly) » |
+- **Forme corrigée, fond jamais** : « raisons.R3 » devient `R3`, « E1-E3 » devient `E1, E2, E3`, le gras Markdown est retiré. Une référence qui n'existe pas reste refusée.
+- **Mise au point sur de vraies réponses** : les premières notes de `ministral-8b` citaient des références au mauvais format, inversaient le sens (« confirme une indemnisation probable » sur une grève) et inventaient des noms d'aéroports. Chacune de ces erreurs est devenue un test (`tests/test_note.py`) et un contrôle.
+- **Repli** : sans clé, en cas d'erreur réseau, de quota ou de contrôle échoué, la note vient du **modèle fixe**, au même format. La raison du repli et les problèmes détectés sont affichés. Un échec passager (quota, réseau) n'est pas mis en cache et peut être retenté. La démonstration ne dépend donc jamais du LLM.
+- **Cache** : une note par (faits, modèle, version de la consigne), gardée dans `data/cache/notes/`. `python scripts/prepare_notes.py` pré-génère les notes des dossiers de démonstration en respectant le quota.
+- **Ce que la note ne fait pas** : elle ne modifie ni le statut, ni l'action, ni les minutes imputables. L'interface affiche la décision du moteur, la note est un texte à côté, que le juriste relit.
+- **Pourquoi** : dans le produit, la valeur du LLM est dans la **rédaction** (note au juriste, puis plus tard courrier à la compagnie), là où un humain passait du temps. La décision, elle, doit rester reproductible (D2). Les contrôles transforment « le LLM a sans doute raison » en « chaque phrase est rattachée à une preuve vérifiable, et le sens est vérifié ».
+- **Pourquoi Mistral** : offre gratuite, hébergement dans l'UE (données de dossiers). Sur l'offre gratuite, `mistral-small` est fermé et `ministral-8b` limité à 2 requêtes par minute : en production, un modèle plus grand (`EC_NOTE_MODEL`) et une offre payante. Le client est une simple fonction `messages → texte` : changer de fournisseur ne touche ni aux contrôles ni aux tests.
+- **Limite** : les contrôles attrapent les erreurs graves et mesurables (références, nombres, inversion du sens, lieux), pas toutes les nuances. Un petit modèle peut encore résumer maladroitement une preuve. C'est pourquoi la note reste destinée au juriste, jamais au passager. Suite : un jeu de notes relues par les juristes pour mesurer le taux d'erreur, puis un LLM juge évalué sur ce jeu.
+- **Écarté** : laisser le LLM lire tout le JSON (bruit, coût, et risque qu'il « recalcule » la décision) ; afficher la note du LLM sans contrôle ; envoyer une note du LLM directement au passager.

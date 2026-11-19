@@ -82,7 +82,7 @@ Les hypothèses marquées ⚖️ doivent être validées avec un juriste.
 - **Évolution** : avec un historique de dossiers et leur issue (payé, refusé, motif), on pourra calibrer les seuils, puis envisager un modèle **sous** les règles.
 
 ### H12 — Le LLM est hors de la décision
-- **Énoncé** : en option, un LLM rédige l'explication pour le juriste, uniquement à partir des preuves JSON. Par défaut, un modèle de texte fixe.
+- **Énoncé** : en option, un LLM rédige l'explication pour le juriste, uniquement à partir des preuves JSON. Par défaut, un modèle de texte fixe. Implémenté dans `note.py`, avec contrôles des références et des nombres (D14).
 - **Pourquoi** : une décision juridique doit être reproductible et auditée. « Le code décide, l'IA met en forme. »
 
 ## D. Limites assumées
