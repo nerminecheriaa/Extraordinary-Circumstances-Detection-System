@@ -1,0 +1,29 @@
+# Dossier de test : JOURNÉE RÉELLE, VOL FICTIF.
+# Le vol et ses horaires suivent une convention fixe (départ prévu 10:00Z,
+# 210 min de retard au départ et à l'arrivée), choisie AVANT de lancer le moteur.
+
+case_id: orly_marseille_jour_poly_2023-07-05
+description: >
+  Jour de la tempête Poly aux Pays-Bas, mais le vol relie Orly à Marseille, loin de la tempête. Météo calme aux deux aéroports.
+
+flight:
+  number: TEST010
+  departure: LFPO
+  arrival: LFML
+  scheduled_departure: "2023-07-05T10:00:00Z"
+  scheduled_arrival: "2023-07-05T11:20:00Z"
+  actual_departure: "2023-07-05T13:30:00Z"
+  actual_arrival: "2023-07-05T14:50:00Z"
+
+expected:            # hypothèse, à confirmer par un juriste
+  status: AUCUNE
+  ec_type: null
+  rationale: >
+    La tempête ne touche aucun aéroport du vol. Piège : ne pas attribuer au vol un événement d'un autre aéroport.
+
+sources: []
+
+verification:
+  event_confirmed: false           # aucun événement aux aéroports du vol
+  metar_departure_checked: true    # relevés IEM relus (vent, rafales, visibilité, phénomènes) : LFPO calme
+  metar_arrival_checked: true      # relevés IEM relus (vent, rafales, visibilité, phénomènes) : LFML calme

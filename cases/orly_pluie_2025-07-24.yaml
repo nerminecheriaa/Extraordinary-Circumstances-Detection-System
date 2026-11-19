@@ -1,0 +1,30 @@
+# Dossier de test : JOURNÉE RÉELLE, VOL FICTIF.
+# Le vol et ses horaires suivent une convention fixe (départ prévu 10:00Z,
+# 210 min de retard au départ et à l'arrivée), choisie AVANT de lancer le moteur.
+
+case_id: orly_pluie_2025-07-24
+description: >
+  Mauvais temps ordinaire à Orly : pluie, averses, rafales à 24 kt, visibilité minimale 6 km. Aucune grève ATC trouvée pour cette date.
+
+flight:
+  number: TEST012
+  departure: LFPO
+  arrival: LFBO
+  scheduled_departure: "2025-07-24T10:00:00Z"
+  scheduled_arrival: "2025-07-24T11:15:00Z"
+  actual_departure: "2025-07-24T13:30:00Z"
+  actual_arrival: "2025-07-24T14:45:00Z"
+
+expected:            # hypothèse, à confirmer par un juriste
+  status: AUCUNE
+  ec_type: null
+  rationale: >
+    Pluie et vent modéré : conditions ordinaires d'exploitation, pas une météo grave (H2).
+
+sources: []
+
+verification:
+  event_confirmed: false
+  no_strike_found: true          # couverture du calendrier : France, juillet 2025
+  metar_departure_checked: true    # relevés IEM relus (vent, rafales, visibilité, phénomènes) : -RA, RA, -SHRA, rafales 24 kt
+  metar_arrival_checked: true      # relevés IEM relus (vent, rafales, visibilité, phénomènes) : LFBO calme

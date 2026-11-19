@@ -1,0 +1,31 @@
+# Dossier de test : JOURNÉE RÉELLE, VOL FICTIF.
+# Les événements sont réels et sourcés. Le vol et ses horaires suivent une
+# convention fixe (départ prévu 10:00Z, 210 min de retard au départ et à l'arrivée),
+# choisie AVANT de lancer le moteur.
+
+case_id: londres_eunice_2022-02-18
+description: >
+  Tempête Eunice. Deux alertes rouges vent du Met Office (rafales jusqu'à 90 mph). Heathrow est l'aéroport britannique le plus touché : environ 20 % des vols affectés.
+
+flight:
+  number: TEST005
+  departure: EGLL
+  arrival: LFPO
+  scheduled_departure: "2022-02-18T10:00:00Z"
+  scheduled_arrival: "2022-02-18T11:15:00Z"
+  actual_departure: "2022-02-18T13:30:00Z"
+  actual_arrival: "2022-02-18T14:45:00Z"
+
+expected:            # hypothèse, à confirmer par un juriste
+  status: EC_PROBABLE
+  ec_type: METEO
+  rationale: >
+    Tempête majeure au départ, documentée par la presse : météo d'une gravité qui empêche d'exploiter normalement.
+
+sources:
+  - https://www.ttgmedia.com/news/more-than-400-flights-cancelled-as-storm-eunice-causes-travel-chaos-32865
+
+verification:
+  event_confirmed: true            # presse
+  metar_departure_checked: true    # relevés IEM relus (vent, rafales, visibilité, phénomènes) : rafales 53 kt
+  metar_arrival_checked: false     # LFPO à relire

@@ -1,0 +1,33 @@
+# Dossier de test : JOURNÉE RÉELLE, VOL FICTIF.
+# La météo et les événements sont réels et sourcés. Le vol et ses horaires
+# sont un scénario construit pour tester le module.
+
+case_id: munich_neige_2023-12-02
+description: >
+  Neige continue et plafond très bas (100 à 200 ft) à Munich.
+  Aéroport fermé le 2 décembre 2023.
+
+flight:
+  number: TEST001
+  departure: EDDM
+  arrival: LFPG
+  scheduled_departure: "2023-12-02T09:00:00Z"
+  scheduled_arrival: "2023-12-02T10:30:00Z"
+  actual_departure: "2023-12-03T08:00:00Z"
+  actual_arrival: "2023-12-03T09:30:00Z"
+
+expected:            # hypothèse, à confirmer par un juriste
+  status: EC_PROBABLE
+  ec_type: METEO
+  rationale: >
+    Neige persistante et plafond sous 200 ft pendant la plage du vol,
+    fermeture de l'aéroport. Météo grave, extérieure à la compagnie.
+
+sources:
+  - https://www.flightradar24.com/blog/aviation-news/airport-news/munich-closure-data-dec-2023/
+  - https://www.bloomberg.com/news/articles/2023-12-02/heavy-snowfall-disrupts-travel-in-southern-germany-switzerland
+
+verification:
+  event_confirmed: true          # presse
+  metar_departure_checked: true  # EDDM 2023-12-02 relu
+  metar_arrival_checked: true    # LFPG 2023-12-03 : neige faible (-SN), sans gravité

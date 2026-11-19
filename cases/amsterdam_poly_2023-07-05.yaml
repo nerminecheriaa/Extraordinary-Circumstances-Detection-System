@@ -1,0 +1,31 @@
+# Dossier de test : JOURNÉE RÉELLE, VOL FICTIF.
+# Les événements sont réels et sourcés. Le vol et ses horaires suivent une
+# convention fixe (départ prévu 10:00Z, 210 min de retard au départ et à l'arrivée),
+# choisie AVANT de lancer le moteur.
+
+case_id: amsterdam_poly_2023-07-05
+description: >
+  Tempête Poly, alerte « code rouge » aux Pays-Bas. Schiphol annule 400 vols au total.
+
+flight:
+  number: TEST006
+  departure: EHAM
+  arrival: LFPO
+  scheduled_departure: "2023-07-05T10:00:00Z"
+  scheduled_arrival: "2023-07-05T11:20:00Z"
+  actual_departure: "2023-07-05T13:30:00Z"
+  actual_arrival: "2023-07-05T14:50:00Z"
+
+expected:            # hypothèse, à confirmer par un juriste
+  status: EC_PROBABLE
+  ec_type: METEO
+  rationale: >
+    Tempête au départ, documentée par la presse, avec annulations massives à Schiphol.
+
+sources:
+  - https://www.euronews.com/travel/2023/07/05/storm-poly-over-200-flights-cancelled-at-schiphol-airport-as-freak-summer-weather-hits-net
+
+verification:
+  event_confirmed: true            # presse
+  metar_departure_checked: true    # relevés IEM relus (vent, rafales, visibilité, phénomènes) : rafales 58 kt, +RA
+  metar_arrival_checked: true      # relevés IEM relus (vent, rafales, visibilité, phénomènes) : LFPO calme

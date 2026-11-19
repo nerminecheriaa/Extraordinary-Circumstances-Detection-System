@@ -1,0 +1,32 @@
+# Dossier de test : JOURNÉE RÉELLE, VOL FICTIF.
+# La météo est réelle. Le vol et ses horaires sont un scénario construit
+# pour tester le module.
+
+case_id: paris_calme_2025-07-10
+description: >
+  Journée calme à Roissy (CAVOK, vent faible). Aucune grève du contrôle
+  aérien trouvée pour cette date. Un retard ici vient d'une autre cause.
+
+flight:
+  number: TEST004
+  departure: LFPG
+  arrival: LFMN
+  scheduled_departure: "2025-07-10T07:00:00Z"
+  scheduled_arrival: "2025-07-10T08:35:00Z"
+  actual_departure: "2025-07-10T10:30:00Z"
+  actual_arrival: "2025-07-10T12:05:00Z"
+
+expected:            # hypothèse, à confirmer par un juriste
+  status: AUCUNE
+  ec_type: null
+  rationale: >
+    Aucun signal extérieur : météo calme, pas de grève connue.
+    Le dossier peut continuer automatiquement.
+
+sources: []          # la preuve est l'absence de signal dans les METAR
+
+verification:
+  event_confirmed: false         # rien à confirmer : journée sans événement
+  no_strike_found: true          # préavis de juillet 2025 limités aux 3 et 4 juillet
+  metar_departure_checked: true  # LFPG 2025-07-10 relu : CAVOK
+  metar_arrival_checked: false   # LFMN à relire

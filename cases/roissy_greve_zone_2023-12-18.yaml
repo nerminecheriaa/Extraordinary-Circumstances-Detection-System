@@ -1,0 +1,31 @@
+# Dossier de test : JOURNÉE RÉELLE, VOL FICTIF.
+# Les événements sont réels et sourcés. Le vol et ses horaires suivent une
+# convention fixe (départ prévu 10:00Z, 210 min de retard au départ et à l'arrivée),
+# choisie AVANT de lancer le moteur.
+
+case_id: roissy_greve_zone_2023-12-18
+description: >
+  Même grève que orly_greve_atc_2023-12-18 (préavis visant aussi le CRNA-Nord), mais vol au départ de Roissy-CDG, que la source ne cite pas parmi les aéroports touchés.
+
+flight:
+  number: TEST009
+  departure: LFPG
+  arrival: LFMN
+  scheduled_departure: "2023-12-18T10:00:00Z"
+  scheduled_arrival: "2023-12-18T11:35:00Z"
+  actual_departure: "2023-12-18T13:30:00Z"
+  actual_arrival: "2023-12-18T15:05:00Z"
+
+expected:            # hypothèse, à confirmer par un juriste
+  status: INCERTAIN
+  ec_type: null
+  rationale: >
+    Grève ATC réelle dans la zone, mais aucune source ne dit si Roissy-CDG a été touché. Un juriste doit chercher le motif et l'impact réel.
+
+sources:
+  - https://www.tourmag.com/Greve-controleurs-aeriens-perturbation-a-Orly-et-Brest_a121008.html
+
+verification:
+  event_confirmed: true            # grève confirmée ; impact à CDG non sourcé
+  metar_departure_checked: true    # relevés IEM relus (vent, rafales, visibilité, phénomènes) : BCFG, BR, visibilité min 1996 m
+  metar_arrival_checked: true      # relevés IEM relus (vent, rafales, visibilité, phénomènes) : LFMN calme

@@ -1,0 +1,33 @@
+# Dossier de test : JOURNÉE RÉELLE, VOL FICTIF.
+# La météo et les événements sont réels et sourcés. Le vol et ses horaires
+# sont un scénario construit pour tester le module.
+
+case_id: paris_greve_atc_2025-07-03
+description: >
+  Grève nationale du contrôle aérien en France (UNSA-ICNA, USAC-CGT).
+  Météo calme à Roissy (CAVOK toute la journée).
+
+flight:
+  number: TEST003
+  departure: LFPG
+  arrival: LFMN
+  scheduled_departure: "2025-07-03T07:00:00Z"
+  scheduled_arrival: "2025-07-03T08:35:00Z"
+  actual_departure: "2025-07-03T10:30:00Z"
+  actual_arrival: "2025-07-03T12:05:00Z"
+
+expected:            # hypothèse, à confirmer par un juriste
+  status: EC_PROBABLE
+  ec_type: GREVE_ATC
+  rationale: >
+    Grève du contrôle aérien, extérieure à la compagnie. La météo seule
+    ne doit rien détecter : ce cas montre pourquoi le module grève est utile.
+
+sources:
+  - https://www.lechotouristique.com/article/greve-du-4-juillet-30-a-50-de-vols-annules-dans-11-grands-aeroports
+  - https://www.air-journal.fr/2025-07-13-la-derniere-greve-des-controleurs-aeriens-francais-a-coute-120-millions-deuros-selon-eurocontrol-5264054.html
+
+verification:
+  event_confirmed: true          # presse
+  metar_departure_checked: true  # LFPG 2025-07-03 relu : CAVOK
+  metar_arrival_checked: false   # LFMN à relire

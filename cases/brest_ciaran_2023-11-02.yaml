@@ -1,0 +1,34 @@
+# Dossier de test : JOURNÉE RÉELLE, VOL FICTIF.
+# La météo et les événements sont réels et sourcés. Le vol et ses horaires
+# sont un scénario construit pour tester le module.
+
+case_id: brest_ciaran_2023-11-02
+description: >
+  Tempête Ciarán. Vent moyen jusqu'à 45 kt et rafales jusqu'à 75 kt
+  dans les METAR de Brest dans la nuit du 1er au 2 novembre 2023.
+  Aéroport fermé jusqu'au 3 novembre au matin.
+
+flight:
+  number: TEST002
+  departure: LFRB
+  arrival: LFPG
+  scheduled_departure: "2023-11-02T05:30:00Z"
+  scheduled_arrival: "2023-11-02T06:45:00Z"
+  actual_departure: "2023-11-03T06:00:00Z"
+  actual_arrival: "2023-11-03T07:15:00Z"
+
+expected:            # hypothèse, à confirmer par un juriste
+  status: EC_PROBABLE
+  ec_type: METEO
+  rationale: >
+    Vent violent à l'aéroport de départ avant l'heure prévue, fermeture
+    de l'aéroport. Météo grave, extérieure à la compagnie.
+
+sources:
+  - https://www.infoclimat.fr/bulletin-special-383-tempete-ciaran.html
+  - https://www.tourmag.com/tags/tempete+ciaran/
+
+verification:
+  event_confirmed: true          # presse
+  metar_departure_checked: true  # LFRB 2023-11-01 et 2023-11-02 relus
+  metar_arrival_checked: false   # LFPG à relire

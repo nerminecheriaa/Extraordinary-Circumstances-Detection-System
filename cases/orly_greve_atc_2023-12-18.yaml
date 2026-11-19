@@ -1,0 +1,31 @@
+# Dossier de test : JOURNÉE RÉELLE, VOL FICTIF.
+# Les événements sont réels et sourcés. Le vol et ses horaires suivent une
+# convention fixe (départ prévu 10:00Z, 210 min de retard au départ et à l'arrivée),
+# choisie AVANT de lancer le moteur.
+
+case_id: orly_greve_atc_2023-12-18
+description: >
+  Grève des contrôleurs aériens (préavis de plusieurs syndicats, dont l'USAC-CGT). La DGAC demande de réduire les vols de 30 % à Orly et de 50 % à Brest.
+
+flight:
+  number: TEST008
+  departure: LFPO
+  arrival: LFBO
+  scheduled_departure: "2023-12-18T10:00:00Z"
+  scheduled_arrival: "2023-12-18T11:15:00Z"
+  actual_departure: "2023-12-18T13:30:00Z"
+  actual_arrival: "2023-12-18T14:45:00Z"
+
+expected:            # hypothèse, à confirmer par un juriste
+  status: EC_PROBABLE
+  ec_type: GREVE_ATC
+  rationale: >
+    Grève du contrôle aérien, extérieure à la compagnie, avec réduction de programme imposée à Orly. Brouillard le matin à Orly (visibilité 805 m) : ordinaire, ce n'est pas la cause retenue.
+
+sources:
+  - https://www.tourmag.com/Greve-controleurs-aeriens-perturbation-a-Orly-et-Brest_a121008.html
+
+verification:
+  event_confirmed: true            # presse
+  metar_departure_checked: true    # relevés IEM relus (vent, rafales, visibilité, phénomènes) : BR, FG, visibilité min 805 m
+  metar_arrival_checked: true      # relevés IEM relus (vent, rafales, visibilité, phénomènes) : LFBO BR
