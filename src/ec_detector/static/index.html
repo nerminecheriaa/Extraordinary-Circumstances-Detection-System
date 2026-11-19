@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Détecteur de CE</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">CE</div>
+      <div>
+        <h1>Détecteur de circonstances extraordinaires</h1>
+        <p class="sub">Règlement (CE) n° 261/2004, art. 5 §3 · prototype</p>
+      </div>
+    </div>
+    <div class="versions" id="versions"></div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" class="tab active" data-view="queue" aria-selected="true">Dossiers</button>
+    <button role="tab" class="tab" data-view="new" aria-selected="false">Nouveau dossier</button>
+    <button role="tab" class="tab" data-view="eval" aria-selected="false">Évaluation</button>
+  </nav>
+
+  <main>
+    <!-- File de dossiers -->
+    <section id="view-queue" class="view">
+      <div class="queue-head">
+        <div class="filters" id="filters"></div>
+        <p class="note">Journées réelles, <strong>vols fictifs</strong> : météo et grèves sont réelles et sourcées, les horaires sont construits pour la démonstration.</p>
+      </div>
+      <div class="split">
+        <div class="list" id="case-list"><p class="loading">Calcul des décisions… (premier lancement : téléchargement des METAR)</p></div>
+        <div class="detail" id="case-detail"></div>
+      </div>
+    </section>
+
+    <!-- Nouveau dossier -->
+    <section id="view-new" class="view" hidden>
+      <div class="split">
+        <form id="new-form" class="card form" novalidate>
+          <h2>Analyser un vol</h2>
+          <p class="note">Toutes les heures sont en <strong>UTC</strong>. Les relevés METAR sont téléchargés à la demande (IEM), puis mis en cache.</p>
+          <div class="grid2">
+            <label>N° de vol<input name="number" required placeholder="AF1234"></label>
+            <label>Identifiant du dossier<input name="case_id" required placeholder="dossier-001"></label>
+            <label>Départ (OACI)<input name="departure" required maxlength="4" placeholder="LFPG"></label>
+            <label>Arrivée (OACI)<input name="arrival" required maxlength="4" placeholder="LFMN"></label>
+            <label>Départ prévu (UTC)<input name="scheduled_departure" type="datetime-local" required></label>
+            <label>Arrivée prévue (UTC)<input name="scheduled_arrival" type="datetime-local" required></label>
+            <label>Départ réel (UTC)<input name="actual_departure" type="datetime-local" required></label>
+            <label>Arrivée réelle (UTC)<input name="actual_arrival" type="datetime-local" required></label>
+          </div>
+          <div class="examples" id="examples"></div>
+          <div class="form-actions">
+            <button type="submit" class="btn primary" id="submit-btn">Analyser</button>
+            <span class="form-status" id="form-status" role="status"></span>
+          </div>
+        </form>
+        <div class="detail" id="new-detail">
+          <div class="empty">Le résultat s'affiche ici, au même format que pour un dossier de la file.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Évaluation -->
+    <section id="view-eval" class="view" hidden>
+      <div id="eval"></div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
