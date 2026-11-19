@@ -13,6 +13,10 @@ Endpoints :
     POST /api/decide      un dossier → une décision
     POST /api/decide/batch plusieurs dossiers → plusieurs décisions
     GET  /api/evaluation  indicateurs sur les dossiers annotés
+    POST /api/note        un dossier → sa décision + la note pour le juriste (LLM vérifié, D14)
+
+La note est calculée sur une décision recalculée ICI, jamais sur une décision
+envoyée par le navigateur : le LLM ne voit que ce que le moteur a produit.
 """
 
 from __future__ import annotations
@@ -30,12 +34,15 @@ from pydantic import BaseModel, Field
 from ec_detector.engine import Fetcher, decide, load_rules
 from ec_detector.evaluation import row_from, score
 from ec_detector.models import Flight
+from ec_detector.note import LlmClient, NoteStore, client_from_env, load_dotenv, note_for
 from ec_detector.strikes import StrikeCalendar, load_strikes
 from ec_detector.weather import get_observations
 
 ROOT = Path(__file__).resolve().parents[2]   # racine du repo (installation éditable)
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 MAX_BATCH = 100
+FROM_ENV = object()   # par défaut, le client LLM est lu dans l'environnement (ou .env)
+NOTES_DIR = ROOT / "data" / "cache" / "notes"   # ignoré par git, comme le cache METAR
 
 
 class FlightIn(BaseModel):
@@ -65,11 +72,21 @@ def _require(path: Path) -> Path:
 
 
 def create_app(rules: dict | None = None, strikes: StrikeCalendar | None = None,
-               fetch: Fetcher = get_observations, cases_dir: Path | None = None) -> FastAPI:
-    """Fabrique de l'application. Les tests injectent règles, calendrier et `fetch`."""
+               fetch: Fetcher = get_observations, cases_dir: Path | None = None,
+               llm: LlmClient | None = FROM_ENV, notes_dir: Path | None = None) -> FastAPI:
+    """Fabrique de l'application. Les tests injectent règles, calendrier, `fetch` et `llm`.
+
+    `notes_dir` : dossier où garder les notes (sinon en mémoire seulement).
+    """
     rules = rules or load_rules(_require(ROOT / "config" / "rules.yaml"))
     strikes = strikes or load_strikes(_require(ROOT / "data" / "strikes.yaml"))
     cases_dir = cases_dir or ROOT / "cases"
+    if llm is FROM_ENV:
+        load_dotenv(ROOT / ".env")   # .env est ignoré par git : la clé ne part jamais sur GitHub
+        llm = client_from_env()
+    llm_model = getattr(llm, "model", None) if llm else None
+    # Une note par décision et par modèle : on n'appelle pas le LLM deux fois (quota gratuit).
+    notes = NoteStore(notes_dir)
 
     app = FastAPI(title="ec-detector", version=rules["version"],
                   description="Détection de circonstances extraordinaires (CE 261/2004).")
@@ -101,6 +118,7 @@ def create_app(rules: dict | None = None, strikes: StrikeCalendar | None = None,
             "rules_version": rules["version"],
             "strike_calendar_version": strikes.version,
             "compensation_threshold_minutes": rules["legal"]["compensation_threshold_minutes"],
+            "note_llm": llm_model if llm else None,
             "reform_application_date": rules["legal"]["reform_application_date"],
             "strike_coverage": [{"zone": c.zone, "from": c.start.isoformat(),
                                  "to": c.end.isoformat()} for c in strikes.coverage],
@@ -124,6 +142,11 @@ def create_app(rules: dict | None = None, strikes: StrikeCalendar | None = None,
     def decide_batch(body: BatchIn) -> list[dict]:
         return [run(c.case_id, c.flight.model_dump()) for c in body.cases]
 
+    @app.post("/api/note")
+    def note(body: CaseIn) -> dict:
+        dec = run(body.case_id, body.flight.model_dump())
+        return {"decision": dec, "note": note_for(dec, llm, llm_model, notes)}
+
     @app.get("/api/evaluation")
     def evaluation() -> dict:
         class _D:  # adaptateur : row_from attend un objet Decision
@@ -146,5 +169,5 @@ def __getattr__(name: str):
     # `uvicorn ec_detector.api:app` : l'application n'est créée qu'à la demande,
     # pour que l'import du module (tests) ne lise aucun fichier.
     if name == "app":
-        return create_app()
+        return create_app(notes_dir=NOTES_DIR)
     raise AttributeError(name)

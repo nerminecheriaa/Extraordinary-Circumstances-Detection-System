@@ -42,7 +42,8 @@ def client(tmp_path):
         + "".join(f"  {k}: \"{v}\"\n" for k, v in FLIGHT.items())
         + "expected:\n  status: AUCUNE\n  ec_type: null\nsources: []\nverification: {}\n",
         encoding="utf-8")
-    return TestClient(create_app(RULES, CAL, fetch=calm, cases_dir=tmp_path))
+    # llm=None : jamais de vraie clé ni d'appel réseau dans les tests.
+    return TestClient(create_app(RULES, CAL, fetch=calm, cases_dir=tmp_path, llm=None))
 
 
 def test_decide_meme_json_que_le_moteur(client):
@@ -82,3 +83,28 @@ def test_meta_et_page(client):
     assert m["compensation_threshold_minutes"] == 180 and m["strike_coverage"]
     assert "Détecteur" in client.get("/").text
     assert client.get("/static/app.js").status_code == 200
+
+
+def test_note_sans_llm_modele_fixe(client):
+    r = client.post("/api/note", json={"case_id": "x", "flight": FLIGHT})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["decision"]["status"] == "AUCUNE"
+    assert body["note"]["source"] == "MODELE_FIXE" and body["note"]["paragraphs"]
+    assert client.get("/api/meta").json()["note_llm"] is None
+
+
+def test_note_avec_llm_injecte_et_cache(tmp_path):
+    calls = []
+
+    def fake_llm(messages):
+        calls.append(messages)
+        return '{"paragraphes": [{"texte": "Aucune circonstance extraordinaire.", "refs": ["R1"]}]}'
+    fake_llm.model = "faux-modele"
+
+    c = TestClient(create_app(RULES, CAL, fetch=calm, cases_dir=tmp_path, llm=fake_llm))
+    for _ in range(2):
+        note = c.post("/api/note", json={"case_id": "x", "flight": FLIGHT}).json()["note"]
+    assert note["source"] == "LLM" and note["model"] == "faux-modele"
+    assert len(calls) == 1                      # deuxième appel servi par le cache
+    assert c.get("/api/meta").json()["note_llm"] == "faux-modele"
