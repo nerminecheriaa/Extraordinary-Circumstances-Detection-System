@@ -91,11 +91,11 @@ function renderDecision(container, dec, extra = {}) {
 
   // En-tête : l'action d'abord, puis le statut.
   const types = (dec.ec_types || []).map((t) => el("span", { class: "tag" }, TYPES[t] || t));
-  container.append(el("div", { class: "panel hero" },
+  container.append(el("div", { class: "panel hero", "data-ref": "D1" },
     el("div", { class: "hero-top" },
       el("div", {},
         el("div", { class: "title" }, dec.case_id),
-        el("div", { class: "flightline" }, `${f.number} · ${f.departure} → ${f.arrival} · ${day(f.scheduled_departure)}`)),
+        el("div", { class: "flightline", "data-ref": "V1" },`${f.number} · ${f.departure} → ${f.arrival} · ${day(f.scheduled_departure)}`)),
       actionPill(dec.action, true)),
     el("p", { class: "note" }, ACTION_HINT[dec.action] || ""),
     el("div", { class: "facts" },
@@ -110,8 +110,10 @@ function renderDecision(container, dec, extra = {}) {
 
   container.append(el("div", { class: "panel" },
     el("h3", {}, "Pourquoi"),
-    el("ul", { class: "reasons" }, dec.reasons.map((r) => el("li", {}, r)))));
+    el("ul", { class: "reasons" }, dec.reasons.map((r, i) =>
+      el("li", { "data-ref": `R${i + 1}` }, el("span", { class: "refid" }, `R${i + 1}`), " ", r)))));
 
+  container.append(notePanel(container, dec));
   container.append(evidencePanel(dec));
 
   if (extra.description) {
@@ -259,10 +261,12 @@ function evidencePanel(dec) {
     return panel;
   }
   const box = el("div", { class: "evidence" });
+  const ref = (e) => `E${dec.evidence.indexOf(e) + 1}`;  // même numérotation que la note
   for (const e of strikes) {
     const s = e.strike;
-    box.append(el("div", { class: "ev" },
+    box.append(el("div", { class: "ev", "data-ref": ref(e) },
       el("div", { class: "ev-head" },
+        el("span", { class: "refid" }, ref(e)),
         el("span", { class: "tag" }, "Calendrier des grèves"),
         el("strong", {}, s.id), el("span", {}, `${e.airport} (${e.role})`),
         el("span", { class: "note" }, STRIKE_RULES[e.rule_id] || e.rule_id)),
@@ -273,8 +277,9 @@ function evidencePanel(dec) {
   }
   const shown = 6;
   metars.forEach((e, i) => {
-    const node = el("div", { class: "ev" },
+    const node = el("div", { class: "ev", "data-ref": ref(e) },
       el("div", { class: "ev-head" },
+        el("span", { class: "refid" }, ref(e)),
         el("span", { class: "tag" }, "METAR"),
         el("strong", {}, `${e.airport} · ${stamp(e.observed_at)}`)),
       el("div", { class: "ev-raw" }, e.raw),
@@ -293,6 +298,86 @@ function evidencePanel(dec) {
     panel.append(btn);
   }
   return panel;
+}
+
+// ---------- Note pour le juriste (LLM vérifié, D14) ----------
+// La note est un TEXTE à côté de la décision : elle ne change ni le statut ni l'action.
+
+function notePanel(container, dec) {
+  const model = state.meta && state.meta.note_llm;
+  const body = el("div", { class: "note-body" });
+  const status = el("span", { class: "form-status", role: "status" });
+  const btn = el("button", { class: "btn small primary", type: "button", onclick: async () => {
+    btn.disabled = true;
+    status.textContent = model ? "Rédaction par le LLM, puis vérification…" : "Génération…";
+    try {
+      const r = await api("/api/note", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ case_id: dec.case_id, flight: pickFlight(dec.flight) }) });
+      renderNote(container, body, r.note);
+      if (r.note.retryable) {  // quota ou réseau : on peut retenter, rien n'a été gardé en cache
+        btn.disabled = false;
+        btn.textContent = "Réessayer (IA)";
+      } else {
+        btn.remove();
+      }
+      status.textContent = "";
+    } catch (e) {
+      body.replaceChildren(el("div", { class: "error", role: "alert" }, e.message));
+      btn.disabled = false;
+      status.textContent = "";
+    }
+  } }, model ? "Rédiger la note (IA)" : "Générer la note (modèle fixe)");
+
+  return el("div", { class: "panel" },
+    el("h3", {}, "Note pour le juriste"),
+    el("p", { class: "note" }, model
+      ? `Rédigée par un LLM (${model}) à partir des seules raisons R et preuves E ci-dessus et ci-dessous. `
+        + "Le code vérifie chaque référence et chaque nombre ; sinon, modèle fixe. La note ne modifie pas la décision."
+      : "Aucun LLM configuré (MISTRAL_API_KEY) : la note est produite par le modèle fixe."),
+    el("div", { class: "form-actions", style: "margin-top:10px" }, btn, status),
+    body);
+}
+
+function pickFlight(f) {
+  const out = {};
+  for (const k of ["number", "departure", "arrival", ...FIELDS]) out[k] = f[k];
+  return out;
+}
+
+function renderNote(container, box, n) {
+  const llm = n.source === "LLM";
+  const badge = el("div", { class: `note-badge ${llm ? "ok" : "fixed"}` },
+    llm ? `Rédigée par IA · ${n.model} · contrôles réussis`
+        : `Modèle fixe · ${n.fallback_reason}`);
+
+  const chip = (id) => el("button", { class: "ref", type: "button", title: n.references[id] || id,
+    onclick: () => focusRef(container, id) }, id);
+
+  const paras = n.paragraphs.map((p) =>
+    el("p", { class: "note-p" }, p.text, " ", el("span", { class: "refs" }, p.refs.map(chip))));
+
+  const rejected = n.llm_problems && n.llm_problems.length
+    ? el("details", { class: "raw", open: n.retryable || null },
+        el("summary", {}, n.retryable ? "Détail de l'erreur" : "Pourquoi la note du LLM a été rejetée"),
+        el("ul", { class: "reasons", style: "margin-top:8px" }, n.llm_problems.map((p) => el("li", {}, p))))
+    : null;
+
+  box.replaceChildren(badge, ...paras, rejected,
+    el("div", { class: "foot" },
+      el("span", {}, `${n.evidence_sent} preuve(s) envoyée(s)`
+        + (n.evidence_not_sent ? `, ${n.evidence_not_sent} non envoyée(s)` : "")),
+      el("span", {}, "aucune donnée passager"),
+      el("span", {}, `générée le ${stamp(n.generated_at)}`)));
+}
+
+function focusRef(container, id) {
+  const target = container.querySelector(`[data-ref="${id}"]`);
+  if (!target) return;
+  target.hidden = false;  // preuve au-delà des 6 premières : on l'affiche
+  target.scrollIntoView({ behavior: "smooth", block: "center" });
+  target.classList.remove("flash");
+  void target.offsetWidth;  // relance l'animation
+  target.classList.add("flash");
 }
 
 // ---------- File de dossiers ----------
