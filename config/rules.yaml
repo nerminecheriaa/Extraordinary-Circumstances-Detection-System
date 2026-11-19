@@ -1,0 +1,59 @@
+# Règles de détection des circonstances extraordinaires (CE) — météo et grèves ATC.
+# Le calendrier des grèves est dans data/strikes.yaml, avec sa propre version.
+#
+# TOUS LES SEUILS SONT DES HYPOTHÈSES À VALIDER AVEC LES JURISTES.
+# Il n'existe pas de seuil légal chiffré de « météo grave » (voir docs/hypotheses.md, H2).
+# Toute modification d'un seuil doit changer la version.
+
+version: "0.2.0"
+
+legal:
+  # Règlement (UE) 2026/2202 : la plupart des nouvelles règles s'appliquent à partir de cette date.
+  reform_application_date: "2027-10-23"
+  compensation_threshold_minutes: 180   # 3 h de retard à l'arrivée
+
+window:
+  before_scheduled_minutes: 180   # on regarde 3 h avant l'heure prévue
+  max_after_scheduled_minutes: 1440  # au plus 24 h après l'heure prévue
+  max_gap_minutes: 90             # trou plus long entre deux relevés → données incomplètes
+  default_obs_minutes: 30         # durée attribuée au dernier relevé de la fenêtre
+
+# Un relevé déclenche un signal « moderate » ou « severe ».
+signals:
+  wind:
+    moderate_gust_kt: 35      # rafales gênantes pour l'atterrissage et le décollage
+    moderate_mean_kt: 25
+    severe_gust_kt: 50        # niveau tempête
+  visibility:
+    moderate_below_m: 550     # sous le minimum d'une approche de catégorie I
+    severe_below_m: 150
+  ceiling:
+    moderate_below_ft: 200    # sous la hauteur de décision d'une approche de catégorie I
+  # Phénomènes : la première règle qui correspond l'emporte.
+  # intensity : "+" fort, "" modéré, "-" faible. Absent = toute intensité.
+  phenomena:
+    - {contains: "FZRA", severity: severe}   # pluie verglaçante
+    - {contains: "FZDZ", severity: severe}   # bruine verglaçante
+    - {contains: "GR", severity: severe}     # grêle
+    - {contains: "SQ", severity: severe}     # grain
+    - {contains: "FC", severity: severe}     # trombe, tornade
+    - {contains: "VA", severity: severe}     # cendres volcaniques
+    - {contains: "TS", intensity: "+", severity: severe}
+    - {contains: "TS", severity: moderate}   # orage
+    - {contains: "SN", intensity: "+", severity: severe}
+    - {contains: "SN", intensity: "", severity: moderate}
+    # "-SN" (neige faible) : volontairement absent, ce n'est pas une météo grave.
+
+# Une CE météo est retenue à un aéroport si l'une des conditions est vraie.
+episode:
+  min_severe_minutes: 30      # au moins 30 min de conditions sévères
+  min_moderate_minutes: 180   # ou au moins 3 h de conditions modérées (persistance)
+  recovery_minutes: 120       # temps de remise en état après la fin de l'épisode
+
+# Niveaux de confiance fixés par règle. Ce ne sont PAS des probabilités calibrées.
+confidence:
+  ec_severe: 0.9
+  ec_persistent: 0.75
+  ec_strike_confirmed: 0.8   # grève ATC confirmée, aéroport cité par une source (imputation à la journée)
+  none_full_data: 0.9
+  uncertain: 0.5
