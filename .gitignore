@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Cache des données téléchargées (METAR)
+data/cache/
+data/eurocontrol/
+# Secrets et notes privées
+.env
+notes/
+
+# Éditeurs / OS
+.vscode/
+.idea/
+.DS_Store
+
