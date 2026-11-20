@@ -2,8 +2,6 @@
 
 Détection de **circonstances extraordinaires** (CE) au sens de l'article 5 §3 du règlement (CE) n° 261/2004, **par dossier**, à partir des **aéroports** et des **horaires du vol**.
 
-Prototype réalisé pour l'exercice technique proposé par Upclaim.
-
 ## Guide de lecture
 
 | Ce qui est demandé | Où le trouver |
@@ -182,3 +180,23 @@ ec-detector/
 - [x] Étape 3 — Grèves du contrôle aérien
 - [x] Étape 4 — Tests et évaluation sur les cas
 - [x] Étape 5 — API et documentation d'intégration
+
+## 11. Perspectives : plus d'IA, surtout côté grèves
+
+Le principe reste le même (D14) : **l'IA trouve et structure, le code vérifie, un humain valide ce qui entre dans les règles**. L'objectif est de lever la principale limite actuelle, un calendrier des grèves tenu à la main et à couverture étroite.
+
+**Détection des grèves**
+
+1. **Veille automatique des préavis.** Collecter en continu des sources publiques (communiqués DGAC et syndicats, presse, NOTAM, bulletins Eurocontrol), dans plusieurs pays et plusieurs langues. Un LLM transforme chaque article en événement structuré au format de `data/strikes.yaml` : zone, aéroports ou centres de contrôle cités, période avec heures et fuseau, statut (préavis, confirmée, levée), syndicats, source.
+2. **Extraction vérifiable.** Chaque champ extrait doit être accompagné d'une citation exacte du texte source. Le code contrôle que la citation existe, que les dates sont cohérentes, que les codes OACI sont valides. Un événement non vérifié ne sert jamais à conclure `AUCUNE`.
+3. **Validation humaine avant usage.** Les événements extraits arrivent dans une file de relecture ; une fois validés, ils sont versionnés dans le calendrier, comme aujourd'hui. On élargit la couverture (pays, périodes) sans perdre la traçabilité.
+4. **Suivi du cycle de vie.** Rapprocher automatiquement préavis, confirmations et levées d'un même mouvement (une grève annoncée puis annulée n'est pas une CE).
+5. **Qualification de la grève.** Classer la grève : contrôle aérien ou service extérieur à la compagnie (CE possible) ou personnel de la compagnie elle-même (en général pas une CE). Un mauvais classement change la décision, donc le cas douteux part en `INCERTAIN`.
+6. **Confirmation par les données de trafic.** Un modèle de détection d'anomalies sur les séries de vols par aéroport (annulations et retards anormaux, toutes compagnies, données OpenSky ou Eurocontrol) confirme l'impact réel d'une grève, ou signale une perturbation absente du calendrier, qui part en relecture.
+7. **Grèves de survol.** Croiser la trajectoire du vol (OpenSky) avec les centres de contrôle en grève, pour couvrir les vols qui traversent une zone touchée sans y atterrir.
+
+**Autres pistes**
+
+- **Motif déclaré par la compagnie** : un LLM extrait le motif invoqué dans la réponse de la compagnie ; le code le confronte aux preuves (météo, grève) et signale les contradictions au juriste.
+- **Calibration sur dossiers réels** : une fois des dossiers annotés par les juristes disponibles, ajuster seuils et confiance par apprentissage, et donner la priorité en relecture aux `INCERTAIN` les plus informatifs (apprentissage actif).
+- **Note pour le juriste enrichie** : retrouver la jurisprudence pertinente (recherche dans un corpus d'arrêts CJUE et nationaux) et la citer, avec les mêmes contrôles de références que les preuves.
